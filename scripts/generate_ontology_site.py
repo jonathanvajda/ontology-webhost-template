@@ -238,7 +238,7 @@ def write_qa_page(root: Path, output_dir: Path, config: dict, docs: list[Ontolog
     lines = [
         "# Quality Assurance",
         "",
-        "The CI workflow runs ROBOT with the configured SPARQL checks. Failing checks should block publication; warning checks are published for reviewer triage.",
+        "The CI workflow runs ROBOT verify with the configured SPARQL checks. Fail-level violations and warnings are both published here so reviewers can see the complete QA state of the ontology.",
         "",
         "| Ontology | Profile | Failures | Warnings |",
         "|:---|:---:|---:|---:|",

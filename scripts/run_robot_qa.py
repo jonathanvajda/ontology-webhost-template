@@ -12,7 +12,7 @@ import yaml
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="ontology-site.yml")
-    parser.add_argument("--write-script", help="Write a POSIX shell script that runs the configured ROBOT queries.")
+    parser.add_argument("--write-script", help="Write a POSIX shell script that runs the configured ROBOT verify checks.")
     parser.add_argument("--summarize-only", action="store_true", help="Only count existing result files and enforce fail-query status.")
     parser.add_argument("--robot-command", default="robot")
     parser.add_argument("--robot-verbosity", default="-vvv", help="ROBOT verbosity flag to include in generated commands. Use an empty value to disable.")
@@ -80,28 +80,41 @@ def write_robot_script(root: Path, script_path: str, planned_queries: list[dict]
     path = root / script_path
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["#!/bin/sh", "set -eu", ""]
-    for planned in planned_queries:
-        result_path = relative_posix(planned["result_path"])
-        result_dir = str(Path(result_path).parent).replace("\\", "/")
-        lines.append(f"mkdir -p {shlex.quote(result_dir)}")
+    for group in group_planned_queries(planned_queries):
+        output_dir = relative_posix(group["output_dir"])
+        lines.append(f"mkdir -p {shlex.quote(output_dir)}")
         command = [robot_command]
         if robot_verbosity:
             command.append(robot_verbosity)
         command.extend(
             [
-                "query",
+                "verify",
                 "--input",
-                planned["ontology_path"].replace("\\", "/"),
-                "--query",
-                planned["query_path"].replace("\\", "/"),
-                result_path,
-                "--format",
-                "CSV",
+                group["ontology_path"].replace("\\", "/"),
+                "--queries",
             ]
         )
+        command.extend(query.replace("\\", "/") for query in group["query_paths"])
+        command.extend(["--fail-on-violation", "false", "--output-dir", output_dir])
         lines.append(" ".join(shlex.quote(part) for part in command))
         lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def group_planned_queries(planned_queries: list[dict]) -> list[dict]:
+    groups = {}
+    for planned in planned_queries:
+        key = (planned["ontology_id"], planned["severity"], planned["ontology_path"])
+        if key not in groups:
+            groups[key] = {
+                "ontology_id": planned["ontology_id"],
+                "severity": planned["severity"],
+                "ontology_path": planned["ontology_path"],
+                "output_dir": planned["result_path"].parent,
+                "query_paths": [],
+            }
+        groups[key]["query_paths"].append(planned["query_path"])
+    return list(groups.values())
 
 
 def relative_posix(path: Path) -> str:

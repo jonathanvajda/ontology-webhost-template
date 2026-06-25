@@ -24,8 +24,8 @@ mkdocs serve
 ```
 
 The GitHub Actions workflow in `.github/workflows/static.yml` runs the same page
-generation and publishes the built `site/` directory to GitHub Pages after the
-configured ROBOT checks pass.
+generation and publishes the built `site/` directory to GitHub Pages with the
+configured ROBOT QA results.
 
 ## Add To An Existing Repository
 
@@ -136,7 +136,7 @@ runs inside the `obolibrary/robot` container.
 and so fail-query result rows can be counted after ROBOT writes CSV outputs.
 
 The `qa.profiles` section in `ontology-site.yml` is a declarative list of ROBOT
-queries. For example:
+verify checks. For example:
 
 ```yaml
 ontologies:
@@ -149,7 +149,7 @@ qa:
   profiles:
     default:
       fail:
-        - qa/queries/fail/missing-definition.rq
+        - qa/queries/fail/q_class-missing-skos-definition.rq
       warn:
         - qa/queries/warn/missing-alt-label.rq
 ```
@@ -157,7 +157,7 @@ qa:
 That YAML is translated into ROBOT CLI commands like:
 
 ```bash
-robot -vvv query --input ontologies/example.ttl --query qa/queries/fail/missing-definition.rq build/qa/example/fail/missing-definition.csv --format CSV
+robot -vvv verify --input ontologies/example.ttl --queries qa/queries/fail/q_class-missing-skos-definition.rq --fail-on-violation false --output-dir build/qa/example/fail
 ```
 
 The workflow prints the generated `build/qa/run_robot_queries.sh` file before it
@@ -180,9 +180,11 @@ python scripts/run_robot_qa.py --config ontology-site.yml --write-script build/q
 Get-Content build\qa\run_robot_queries.sh
 ```
 
-Use `fail` for checks that should block publication when ROBOT returns any rows.
-Use `warn` for checks that should appear in the generated QA report without
-blocking the GitHub Pages deploy.
+Use `fail` for checks that should be counted as failures in the generated QA
+report. Use `warn` for checks that should be counted as warnings. Both severities
+are run with ROBOT verify using `--fail-on-violation false`, so CSV reports are
+generated even when violations are found and the GitHub Pages deploy can publish
+the failed QA state.
 
 For example:
 
@@ -215,16 +217,15 @@ Suggested query categories:
   annotation hygiene issues, or modeling patterns that need curator review.
 
 In CI, `scripts/run_robot_qa.py --write-script build/qa/run_robot_queries.sh`
-writes the configured ROBOT commands. The workflow runs that script with:
+writes the configured ROBOT verify commands. The workflow runs that script with:
 
 ```bash
 docker run --rm -v "$PWD:/work" -w /work obolibrary/robot:latest sh build/qa/run_robot_queries.sh
 ```
 
-Then `scripts/run_robot_qa.py --summarize-only` counts the CSV rows under
-`build/qa`. The page generator counts those rows into `docs/qa.md`. Any rows
-from a `fail` query make the workflow fail, which prevents publishing a site
-that advertises a failed ontology release.
+Then `scripts/run_robot_qa.py --summarize-only --no-fail` counts the CSV rows
+under `build/qa`. The page generator counts those rows into `docs/qa.md`, and
+the site is still published so failures are visible on the QA page.
 
 ## Adapting For A New Repository
 
