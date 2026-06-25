@@ -1,0 +1,33 @@
+site_name: "Example Ontology Repository"
+site_description: "Static documentation, downloads, QA reports, and diagrams for one or more ontologies."
+repo_url: "https://github.com/example/example-ontology"
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Ontologies:
+      - "Example Ontology": ontologies/example.md
+  - Quality Assurance: qa.md

@@ -1,0 +1,16 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?entity ?type
+WHERE {
+  VALUES ?type {
+    owl:Class
+    owl:ObjectProperty
+    owl:DatatypeProperty
+  }
+  ?entity rdf:type ?type .
+  FILTER(isIRI(?entity))
+  FILTER NOT EXISTS { ?entity skos:altLabel ?alternative_label }
+}
+ORDER BY ?entity

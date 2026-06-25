@@ -1,0 +1,40 @@
+@prefix : <https://example.org/ontology/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+<https://example.org/ontology>
+    a owl:Ontology ;
+    dcterms:title "Example Ontology" ;
+    dcterms:description "A minimal ontology used to demonstrate the generated documentation template." ;
+    dcterms:creator "Dr. Barry Guarino" , "Dr. J. Neil Jensen" ;
+    dcterms:contributor "Jonathan Limbaugh" ,"Example Ontology Team".
+
+:ExampleClass
+    a owl:Class ;
+    rdfs:subClassOf :ExampleParentClass ;
+    rdfs:label "example class" ;
+    skos:definition "A class included to demonstrate generated term tables." .
+
+:ExampleRelation
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf :ExampleParentRelation ;
+    rdfs:label "example relation" ;
+    skos:definition "A relation included to demonstrate generated term tables." .
+
+:ExampleParentClass
+    a owl:Class ;
+    rdfs:label "example parent class" ;
+    skos:definition "A class included to demonstrate generated term tables." .
+
+:ExampleParentRelation
+    a owl:ObjectProperty ;
+    rdfs:label "example parent relation" ;
+    skos:definition "A relation included to demonstrate generated term tables." .
+
+:ExampleIndividual
+    a owl:NamedIndividual , :ExampleClass ;
+    rdfs:label "example individual" ;
+    skos:definition "An individual included to demonstrate generated term tables." .

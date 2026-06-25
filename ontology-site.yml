@@ -1,0 +1,87 @@
+# Boilerplate configuration for the generated ontology documentation site.
+# Copy this file into an ontology repository, edit paths/metadata, then run:
+#   python scripts/generate_ontology_site.py --config ontology-site.yml
+
+site:
+  name: Example Ontology Repository
+  repo_url: https://github.com/example/example-ontology
+  description: Static documentation, downloads, QA reports, and diagrams for one or more ontologies.
+
+metadata:
+  introduction: |
+    This repository publishes reusable ontology artifacts with generated term
+    tables, import diagrams, quality assurance summaries, and download links.
+  license:
+    label: See repository LICENSE
+    url: ../LICENSE
+  contacts:
+    - name: Ontology maintainers
+      email: ontology-maintainers@example.org
+  users:
+    - name: Data modelers
+      website: https://example.org
+    - name: Application developers
+      website: https://example.org
+
+generation:
+  output_dir: docs
+  generated_dir: docs/ontologies
+  artifact_dir: docs/artifacts
+  qa_results_dir: build/qa
+  fail_on_missing_ontology: true
+  term_table:
+    enabled: true
+    include_deprecated: false
+    include_imported_terms: false
+    types:
+      - owl:Class
+      - owl:ObjectProperty
+      - owl:NamedIndividual
+      - owl:DatatypeProperty
+      - owl:AnnotationProperty
+
+ontologies:
+  - id: example
+    path: ontologies/example.ttl
+    page: example.md
+    artifact_label: Example ontology
+    elicit:
+      title: true
+      description: true
+      contributors: true
+      import_diagram: true
+    overrides:
+      title:
+      description:
+      contributors: []
+      import_diagram:
+    downloads:
+      - label: Turtle
+        path: ontologies/example.ttl
+    qa:
+      profile: default
+
+imports:
+  # Optional local copies of imported ontologies. These are used to resolve
+  # import diagram titles and parent labels when available.
+  paths:
+    - ontologies/imports/*.ttl
+    - ontologies/imports/*.owl
+
+design_patterns:
+  # Mermaid files listed here are shown on the main page and ontology pages.
+  - title: Example design pattern
+    path: docs/patterns/example-pattern.mmd
+    ontologies:
+      - example
+
+qa:
+  summary_page: qa.md
+  profiles:
+    default:
+      fail:
+        - qa/queries/fail/missing-label.rq
+        - qa/queries/fail/missing-definition.rq
+      warn:
+        - qa/queries/warn/missing-alt-label.rq
+        - qa/queries/warn/external-parent.rq
