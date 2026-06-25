@@ -78,13 +78,12 @@ design_patterns:
 qa:
   summary_page: qa.md
   # Each profile below is translated into ROBOT CLI calls:
-  #   robot query --input <ontology path> --query <.rq file> <csv output> --format CSV
+  #   robot -vvv query --input <ontology path> --query <.rq file> <csv output> --format CSV
   # The GitHub Actions workflow runs those commands inside obolibrary/robot.
   profiles:
     default:
       # Any result row from a fail query fails CI after ROBOT writes the CSV.
       fail:
-        - qa/queries/fail/missing-label.rq
         - qa/queries/fail/q_class-missing-skos-definition.rq
         - qa/queries/fail/q_class-missing-subclassof.rq
         - qa/queries/fail/q_duplicateLabels.rq

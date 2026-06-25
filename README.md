@@ -149,7 +149,7 @@ qa:
   profiles:
     default:
       fail:
-        - qa/queries/fail/missing-label.rq
+        - qa/queries/fail/missing-definition.rq
       warn:
         - qa/queries/warn/missing-alt-label.rq
 ```
@@ -157,11 +157,12 @@ qa:
 That YAML is translated into ROBOT CLI commands like:
 
 ```bash
-robot query --input ontologies/example.ttl --query qa/queries/fail/missing-label.rq build/qa/example/fail/missing-label.csv --format CSV
+robot -vvv query --input ontologies/example.ttl --query qa/queries/fail/missing-definition.rq build/qa/example/fail/missing-definition.csv --format CSV
 ```
 
 The workflow prints the generated `build/qa/run_robot_queries.sh` file before it
-runs, so the Actions log shows the exact ROBOT commands.
+runs, so the Actions log shows the exact ROBOT commands. The generated commands
+include ROBOT's `-vvv` flag by default for verbose failure messages.
 
 ### Add QA Queries
 

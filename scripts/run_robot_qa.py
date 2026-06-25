@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--write-script", help="Write a POSIX shell script that runs the configured ROBOT queries.")
     parser.add_argument("--summarize-only", action="store_true", help="Only count existing result files and enforce fail-query status.")
     parser.add_argument("--robot-command", default="robot")
+    parser.add_argument("--robot-verbosity", default="-vvv", help="ROBOT verbosity flag to include in generated commands. Use an empty value to disable.")
     parser.add_argument("--no-fail", action="store_true", help="Write result files without failing on fail-query matches.")
     args = parser.parse_args()
 
@@ -26,9 +27,10 @@ def main() -> None:
     qa_dir = root / config["generation"].get("qa_results_dir", "build/qa")
     qa_dir.mkdir(parents=True, exist_ok=True)
     planned_queries = list(iter_planned_queries(config, qa_dir))
+    validate_planned_queries(root, planned_queries)
 
     if args.write_script:
-        write_robot_script(root, args.write_script, planned_queries, args.robot_command)
+        write_robot_script(root, args.write_script, planned_queries, args.robot_command, args.robot_verbosity)
         if not args.summarize_only:
             return
 
@@ -63,7 +65,18 @@ def iter_planned_queries(config: dict, qa_dir: Path) -> list[dict]:
     return planned
 
 
-def write_robot_script(root: Path, script_path: str, planned_queries: list[dict], robot_command: str) -> None:
+def validate_planned_queries(root: Path, planned_queries: list[dict]) -> None:
+    missing = []
+    for planned in planned_queries:
+        for key in ("ontology_path", "query_path"):
+            if not (root / planned[key]).exists():
+                missing.append(f"{key}: {planned[key]}")
+    if missing:
+        details = "\n  - ".join(missing)
+        raise SystemExit(f"Configured QA paths were not found:\n  - {details}")
+
+
+def write_robot_script(root: Path, script_path: str, planned_queries: list[dict], robot_command: str, robot_verbosity: str) -> None:
     path = root / script_path
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = ["#!/bin/sh", "set -eu", ""]
@@ -71,22 +84,22 @@ def write_robot_script(root: Path, script_path: str, planned_queries: list[dict]
         result_path = relative_posix(planned["result_path"])
         result_dir = str(Path(result_path).parent).replace("\\", "/")
         lines.append(f"mkdir -p {shlex.quote(result_dir)}")
-        lines.append(
-            " ".join(
-                shlex.quote(part)
-                for part in [
-                    robot_command,
-                    "query",
-                    "--input",
-                    planned["ontology_path"].replace("\\", "/"),
-                    "--query",
-                    planned["query_path"].replace("\\", "/"),
-                    result_path,
-                    "--format",
-                    "CSV",
-                ]
-            )
+        command = [robot_command]
+        if robot_verbosity:
+            command.append(robot_verbosity)
+        command.extend(
+            [
+                "query",
+                "--input",
+                planned["ontology_path"].replace("\\", "/"),
+                "--query",
+                planned["query_path"].replace("\\", "/"),
+                result_path,
+                "--format",
+                "CSV",
+            ]
         )
+        lines.append(" ".join(shlex.quote(part) for part in command))
         lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
