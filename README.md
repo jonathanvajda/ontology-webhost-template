@@ -15,15 +15,62 @@ generator will create MkDocs pages for:
 
 ## Quick Start
 
+For a new demo clone of this template:
+
 ```powershell
 pip install -r requirements.txt
 python scripts/generate_ontology_site.py --config ontology-site.yml
 mkdocs serve
 ```
 
-The GitHub Actions workflow in `.github/workflows/pages.yml` runs the same page
+The GitHub Actions workflow in `.github/workflows/static.yml` runs the same page
 generation and publishes the built `site/` directory to GitHub Pages after the
 configured ROBOT checks pass.
+
+## Add To An Existing Repository
+
+Most ontology repositories should not fork this whole repository. Instead, build
+the starter zip and extract it at the root of the ontology repository:
+
+```powershell
+python scripts/build_starter_zip.py
+```
+
+The zip is written to `dist/ontology-webhost-starter.zip`. By default it contains
+only the reusable webhost machinery:
+
+- `ontology-site.yml`
+- `mkdocs.yml`
+- `requirements.txt`
+- `.github/workflows/static.yml`
+- `scripts/generate_ontology_site.py`
+- `scripts/run_robot_qa.py`
+- `qa/queries/fail/*.rq`
+- `qa/queries/warn/*.rq`
+- `docs/patterns/example-pattern.mmd`
+- `ONTOLOGY_WEBHOST_README.md`
+
+It intentionally does not include generated output such as `site/`,
+`docs/index.md`, `docs/qa.md`, `docs/ontologies/`, `docs/artifacts/`, or
+`scripts/__pycache__/`.
+
+If someone wants a runnable demo ontology in the zip too, build it with:
+
+```powershell
+python scripts/build_starter_zip.py --include-example-ontology
+```
+
+After extracting the zip into an existing repo, edit `ontology-site.yml` so the
+`ontologies[*].path`, `imports.paths`, download paths, QA profiles, and design
+pattern paths point at real files in that repository. If the repository already
+has a `mkdocs.yml`, merge the generated `markdown_extensions`, `plugins`, and
+workflow commands into the existing MkDocs setup instead of replacing it.
+
+If GitHub already created `.github/workflows/static.yml` for Pages, replace that
+file with this template's version or merge in the build steps. The GitHub
+default static workflow uploads the whole repository with `path: '.'`; this
+template instead generates the ontology pages, builds MkDocs, and uploads only
+the built `site/` directory.
 
 ## YAML Configuration
 
