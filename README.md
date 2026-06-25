@@ -225,7 +225,10 @@ docker run --rm -v "$PWD:/work" -w /work obolibrary/robot:latest sh build/qa/run
 
 Then `scripts/run_robot_qa.py --summarize-only --no-fail` counts the CSV rows
 under `build/qa`. The page generator counts those rows into `docs/qa.md`, and
-the site is still published so failures are visible on the QA page.
+the site is still published so failures are visible on the QA page. The generated
+QA page includes both a summary table and per-query detail tables built from the
+ROBOT CSV files, so reviewers can see the exact resources and values returned by
+each failed or warning check.
 
 ## Adapting For A New Repository
 

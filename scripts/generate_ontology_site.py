@@ -250,12 +250,62 @@ def write_qa_page(root: Path, output_dir: Path, config: dict, docs: list[Ontolog
         rel_page = relative_markdown_link(output_dir / config.get("qa", {}).get("summary_page", "qa.md"), doc.page_path)
         lines.append(f"| [{doc.title}]({rel_page}) | {profile} | {failures} | {warnings} |")
 
+    lines.extend(["", "## Violation Details", ""])
+    for doc in docs:
+        profile_name = find_ontology_config(config, doc.id).get("qa", {}).get("profile", "default")
+        profile = config.get("qa", {}).get("profiles", {}).get(profile_name, {})
+        lines.extend([f"### {doc.title}", ""])
+        for severity in ("fail", "warn"):
+            query_paths = profile.get(severity, [])
+            if not query_paths:
+                continue
+            lines.extend([f"#### {severity.title()} Checks", ""])
+            for query_path in query_paths:
+                result_path = qa_dir / doc.id / severity / f"{Path(query_path).stem}.csv"
+                lines.extend(render_qa_result(root, query_path, result_path))
+
     lines.extend(["", "## Query Inventory", ""])
     for profile_name, profile in config.get("qa", {}).get("profiles", {}).items():
         lines.append(f"### {profile_name}")
         for severity in ("fail", "warn"):
             lines.append(f"- {severity.title()}: {len(profile.get(severity, []))} queries")
     write_text(output_dir / config.get("qa", {}).get("summary_page", "qa.md"), lines)
+
+
+def render_qa_result(root: Path, query_path: str, result_path: Path) -> list[str]:
+    title = Path(query_path).stem
+    lines = [f"##### {title}", "", f"Query: `{query_path}`", ""]
+    if not result_path.exists():
+        lines.extend(["No CSV result was found for this check.", ""])
+        return lines
+
+    rows = read_csv_rows(result_path)
+    if not rows:
+        lines.extend(["No CSV result rows were found for this check.", ""])
+        return lines
+
+    header = rows[0]
+    data_rows = rows[1:]
+    lines.append(f"Result CSV: `{result_path.relative_to(root).as_posix()}`")
+    lines.append("")
+    if not data_rows:
+        lines.extend(["No violations found.", ""])
+        return lines
+
+    lines.append(f"{len(data_rows)} result row(s):")
+    lines.append("")
+    lines.append("| " + " | ".join(escape_table_cell(column or "value") for column in header) + " |")
+    lines.append("|" + "|".join(":---" for _ in header) + "|")
+    for row in data_rows:
+        padded = row + [""] * max(0, len(header) - len(row))
+        lines.append("| " + " | ".join(escape_table_cell(value) for value in padded[: len(header)]) + " |")
+    lines.append("")
+    return lines
+
+
+def read_csv_rows(path: Path) -> list[list[str]]:
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.reader(handle))
 
 
 def write_mkdocs_nav(root: Path, config: dict, docs: list[OntologyDoc]) -> None:
