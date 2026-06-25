@@ -35,8 +35,17 @@ jobs:
       - name: Pull ROBOT image
         run: docker pull obolibrary/robot:latest
 
-      - name: Run ontology QA
-        run: python scripts/run_robot_qa.py --config ontology-site.yml
+      - name: Translate ontology-site.yml QA profile to ROBOT query commands
+        run: python scripts/run_robot_qa.py --config ontology-site.yml --write-script build/qa/run_robot_queries.sh
+
+      - name: Show ROBOT query commands
+        run: cat build/qa/run_robot_queries.sh
+
+      - name: Run SPARQL QA with ROBOT query
+        run: docker run --rm -v "$PWD:/work" -w /work obolibrary/robot:latest sh build/qa/run_robot_queries.sh
+
+      - name: Summarize ontology QA
+        run: python scripts/run_robot_qa.py --config ontology-site.yml --summarize-only
 
       - name: Generate MkDocs pages
         run: python scripts/generate_ontology_site.py --config ontology-site.yml

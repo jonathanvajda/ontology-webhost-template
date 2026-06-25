@@ -127,7 +127,83 @@ Term tables include configured OWL entity types and emit:
 ## Quality Assurance
 
 The default workflow uses the `obolibrary/robot` Docker image and SPARQL query
-files in `qa/queries`.
+files in `qa/queries`. Python is used only to read `ontology-site.yml`, write a
+small ROBOT command script, and summarize the generated CSV files; ROBOT itself
+runs inside the `obolibrary/robot` container.
+
+`scripts/run_robot_qa.py` does not execute ROBOT in CI. It exists so
+`ontology-site.yml` can stay the single source of truth for which queries run,
+and so fail-query result rows can be counted after ROBOT writes CSV outputs.
+
+The `qa.profiles` section in `ontology-site.yml` is a declarative list of ROBOT
+queries. For example:
+
+```yaml
+ontologies:
+  - id: example
+    path: ontologies/example.ttl
+    qa:
+      profile: default
+
+qa:
+  profiles:
+    default:
+      fail:
+        - qa/queries/fail/missing-label.rq
+      warn:
+        - qa/queries/warn/missing-alt-label.rq
+```
+
+That YAML is translated into ROBOT CLI commands like:
+
+```bash
+robot query --input ontologies/example.ttl --query qa/queries/fail/missing-label.rq build/qa/example/fail/missing-label.csv --format CSV
+```
+
+The workflow prints the generated `build/qa/run_robot_queries.sh` file before it
+runs, so the Actions log shows the exact ROBOT commands.
+
+### Add QA Queries
+
+To add a custom QA check for an ontology:
+
+1. Add a SPARQL `SELECT` query file under `qa/queries/fail/` or
+   `qa/queries/warn/`.
+2. Add that file path to a profile in `ontology-site.yml`.
+3. Assign the profile to each ontology that should use it with
+   `ontologies[*].qa.profile`.
+4. Preview the ROBOT commands with:
+
+```powershell
+python scripts/run_robot_qa.py --config ontology-site.yml --write-script build/qa/run_robot_queries.sh
+Get-Content build\qa\run_robot_queries.sh
+```
+
+Use `fail` for checks that should block publication when ROBOT returns any rows.
+Use `warn` for checks that should appear in the generated QA report without
+blocking the GitHub Pages deploy.
+
+For example:
+
+```yaml
+ontologies:
+  - id: core
+    path: ontologies/core.ttl
+    qa:
+      profile: strict
+
+qa:
+  profiles:
+    strict:
+      fail:
+        - qa/queries/fail/q_class-missing-skos-definition.rq
+        - qa/queries/fail/q_duplicateLabels.rq
+      warn:
+        - qa/queries/warn/q_class-missing-skos-example.rq
+```
+
+Multiple ontologies can reuse the same profile, or each ontology can point to a
+different profile if the QA rules should vary by artifact.
 
 Suggested query categories:
 
@@ -137,10 +213,17 @@ Suggested query categories:
 - `warn`: missing alternative labels, unresolved external parents, broad
   annotation hygiene issues, or modeling patterns that need curator review.
 
-`scripts/run_robot_qa.py` writes query CSV files under `build/qa`. The page
-generator counts those rows into `docs/qa.md`. Any rows from a `fail` query make
-the workflow fail, which prevents publishing a site that advertises a failed
-ontology release.
+In CI, `scripts/run_robot_qa.py --write-script build/qa/run_robot_queries.sh`
+writes the configured ROBOT commands. The workflow runs that script with:
+
+```bash
+docker run --rm -v "$PWD:/work" -w /work obolibrary/robot:latest sh build/qa/run_robot_queries.sh
+```
+
+Then `scripts/run_robot_qa.py --summarize-only` counts the CSV rows under
+`build/qa`. The page generator counts those rows into `docs/qa.md`. Any rows
+from a `fail` query make the workflow fail, which prevents publishing a site
+that advertises a failed ontology release.
 
 ## Adapting For A New Repository
 
